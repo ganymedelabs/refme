@@ -2,26 +2,65 @@
 
 import CSLJson from "./CSLJson.js";
 
+const FONT = {
+    BOLD: "\x1b[1m",
+    GREEN: "\x1b[38;5;48m",
+    BLUE: "\x1b[38;5;33m",
+    RED: "\x1b[38;5;9m",
+    BLACK: "\x1b[38;5;0m",
+    BG_GREEN: "\x1b[48;5;48m",
+    BG_RED: "\x1b[48;5;9m",
+    RESET: "\x1b[0m",
+};
+
+const RESULT = {
+    SUCCESS: `${FONT.BG_GREEN}${FONT.BOLD}${FONT.BLACK} SUCCESS ${FONT.RESET}`,
+    FAIL: `${FONT.BG_RED}${FONT.BOLD}${FONT.BLACK} FAIL ${FONT.RESET}`,
+};
+
 // Extract arguments, excluding the first two default ones (`node` and the script path)
 const args = process.argv.slice(2);
 
 // Default values
 let style = "apa";
 let locale = "en-US";
+let logErrors = false;
 
 // Process each argument
 const identifiers = [];
-for (let i = 0; i < args.length; i++) {
-    if ((args[i] === "--style" || args[i] === "-s") && args[i + 1]) {
-        style = args[i + 1];
-        i++; // Skip the next argument as it's the style value
-    } else if ((args[i] === "--locale" || args[i] === "-l") && args[i + 1]) {
-        locale = args[i + 1];
-        i++; // Skip the next argument as it's the locale value
-    } else {
-        // Assume anything else is an identifier
-        identifiers.push(args[i]);
+if (args.length === 0) {
+    process.stdout.write("");
+} else {
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--log-errors" || args[i] === "-e") {
+            logErrors = true;
+        } else if ((args[i] === "--style" || args[i] === "-s") && args[i + 1]) {
+            style = args[i + 1];
+            i++; // Skip the next argument as it's the style value
+        } else if ((args[i] === "--locale" || args[i] === "-l") && args[i + 1]) {
+            locale = args[i + 1];
+            i++; // Skip the next argument as it's the locale value
+        } else {
+            // Assume anything else is an identifier
+            identifiers.push(args[i]);
+        }
     }
+}
+
+function logLoading() {
+    const loadingCharacters = "⣾⣽⣻⢿⡿⣟⣯⣷";
+    let index = 0;
+
+    const intervalId = setInterval(() => {
+        process.stdout.write("\r" + loadingCharacters[index] + " ");
+
+        index = (index + 1) % loadingCharacters.length;
+    }, 100);
+
+    return function logDone(doneString = "Done") {
+        clearInterval(intervalId);
+        process.stdout.write(`\r${doneString}`);
+    };
 }
 
 function recognizeIdentifierType(string) {
@@ -52,7 +91,7 @@ async function retrieveContent(identifiers) {
     const contentArray = await Promise.all(
         identifiers.map(async (identifier) => {
             const [identifierType, cleanedIdentifier] = identifier;
-            const csl = new CSLJson();
+            const csl = new CSLJson({}, { logErrors });
 
             switch (identifierType) {
                 case "URL":
@@ -82,53 +121,57 @@ async function retrieveContent(identifiers) {
 
     // Display undefined identifiers
     if (undefinedIdentifiers.length) {
-        console.log(
-            `Unable to determine the type of these identifiers:\n${undefinedIdentifiers
-                .map(([_, id]) => `[Undefined] ${id}\n`)
-                .join("")}`
+        process.stdout.write(
+            `${FONT.RED + FONT.BOLD}Unable to determine the type of these identifiers:${
+                FONT.RESET
+            }\n${undefinedIdentifiers.map(([_, id]) => `${FONT.RED}[Undefined]${FONT.RESET} ${id}\n`).join("")}\n`
         );
     }
 
     // Process defined identifiers
     if (definedIdentifiers.length) {
-        console.log(
-            `Retrieving data for these identifiers:\n${definedIdentifiers
-                .map(([type, id]) => `[${type}] ${id}\n`)
-                .join("")}`
+        process.stdout.write(
+            `${FONT.BLUE + FONT.BOLD}Retrieving data for these identifiers:${FONT.RESET}\n${definedIdentifiers
+                .map(([type, id]) => `${FONT.BLUE}[${type}]${FONT.RESET} ${id}\n`)
+                .join("")}\n`
         );
 
+        const logDone = logLoading();
         const contentArray = await retrieveContent(definedIdentifiers);
         const failedRetrievals = contentArray.filter((content) => content?.status === "failed");
         const successfulRetrievals = contentArray.filter((content) => content?.status !== "failed");
+        logDone("");
 
         // Display failed retrievals
         if (failedRetrievals.length) {
-            console.log(
-                `Failed to retrieve content from these identifiers:\n${failedRetrievals
-                    .map(({ type, identifier }) => `[${type}] ${identifier}\n`)
-                    .join("")}`
+            process.stdout.write(
+                `${FONT.RED + FONT.BOLD}Failed to retrieve content from these identifiers:${
+                    FONT.RESET
+                }\n${failedRetrievals
+                    .map(({ type, identifier }) => `${FONT.RED}[${type}]${FONT.RESET} ${identifier}\n`)
+                    .join("")}\n`
             );
         }
 
         // Generate references
         if (successfulRetrievals.length) {
-            const csl = new CSLJson(successfulRetrievals);
+            const logDone = logLoading();
+            const csl = new CSLJson(successfulRetrievals, { logErrors });
             const references = await csl.toBibliography({ style, locale });
-            const failedFormats = references.filter((content) => content?.status === "failed");
-            const successfulFormats = references.filter((content) => content?.status !== "failed");
+            logDone("");
 
-            // Display failed formats
-            if (failedFormats.length !== 0) {
-                console.log(
-                    `Failed to format references for these identifiers:\n${failedFormats
-                        .map(({ type, identifier }) => `[${type}] ${identifier}\n`)
-                        .join("")}`
+            if (!references) {
+                // Display failed status
+                process.stdout.write(
+                    `${RESULT.FAIL} ${FONT.RED + FONT.BOLD}Failed to format references!${FONT.RESET}\n`
                 );
-            }
-
-            // Display formatted references
-            if (successfulFormats.length !== 0) {
-                console.log(`References:\n${successfulFormats}`);
+            } else {
+                // Display formatted references
+                process.stdout.write(
+                    `${RESULT.SUCCESS} ${FONT.GREEN + FONT.BOLD}Successfully generated references:${
+                        FONT.RESET
+                    }\n${references}\n`
+                );
             }
         }
     }

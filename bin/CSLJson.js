@@ -2,24 +2,37 @@ import { Cite, plugins } from "@citation-js/core";
 import "@citation-js/plugin-csl";
 
 class CSLJson {
-    constructor(cslJson) {
+    constructor(cslJson, options = { logErrors: false }) {
         this.cslJson = cslJson;
+        this.options = options;
     }
 
     #CORS_PROXY = "https://corsproxy.io/?";
 
     async #getCslFile(style) {
-        const response = await fetch(
-            `https://raw.githubusercontent.com/citation-style-language/styles/master/${style}.csl`
-        );
-        return await response.text();
+        try {
+            const response = await fetch(
+                `${
+                    this.#CORS_PROXY
+                }https://raw.githubusercontent.com/citation-style-language/styles/master/${style}.csl`
+            );
+            return await response.text();
+        } catch (error) {
+            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+        }
     }
 
     async #getLocaleFile(lang) {
-        const response = await fetch(
-            `https://raw.githubusercontent.com/citation-style-language/locales/master/locales-${lang}.xml`
-        );
-        return await response.text();
+        try {
+            const response = await fetch(
+                `${
+                    this.#CORS_PROXY
+                }https://raw.githubusercontent.com/citation-style-language/locales/master/locales-${lang}.xml`
+            );
+            return await response.text();
+        } catch (error) {
+            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+        }
     }
 
     #createDateObject(yearOrDate, month, day) {
@@ -78,7 +91,8 @@ class CSLJson {
                 accessed: this.#createDateObject(new Date()),
                 author: message.author,
             };
-        } catch {
+        } catch (error) {
+            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
             return { identifier: doi, type: "DOI", status: "failed" };
         }
     }
@@ -118,7 +132,6 @@ class CSLJson {
 
         try {
             const response = await fetch(`${this.#CORS_PROXY}${url}`);
-            console.log(response);
             const text = await response.text();
             const parser = new DOMParser();
             const doc = parser.parseFromString(text, "text/html");
@@ -148,7 +161,8 @@ class CSLJson {
                     extractContent(doc, 'link[rel="canonical"]', "href") ||
                     url,
             };
-        } catch {
+        } catch (error) {
+            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
             return { identifier: url, type: "URL", status: "failed" };
         }
     }
@@ -174,7 +188,8 @@ class CSLJson {
                 issued: this.#createDateObject(new Date(edition?.publish_date?.[0])),
                 accessed: this.#createDateObject(new Date()),
             };
-        } catch {
+        } catch (error) {
+            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
             return { identifier: isbn, type: "ISBN", status: "failed" };
         }
     }
@@ -208,7 +223,8 @@ class CSLJson {
                 accessed: this.#createDateObject(new Date()),
                 author: data?.author,
             };
-        } catch {
+        } catch (error) {
+            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
             return { identifier: pmcid, type: "PMCID", status: "failed" };
         }
     }
@@ -240,7 +256,8 @@ class CSLJson {
                 accessed: this.#createDateObject(new Date()),
                 author: data?.author,
             };
-        } catch {
+        } catch (error) {
+            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
             return { identifier: pmid, type: "PMID", status: "failed" };
         }
     }
@@ -256,13 +273,15 @@ class CSLJson {
             config.locales.add(lang, localeFile);
 
             const cite = new Cite(this.cslJson);
-
-            return cite.format("bibliography", {
+            const formattedReferences = cite.format("bibliography", {
                 template: style,
                 lang,
             });
-        } catch {
-            return { identifier: pmid, type: "PMID", status: "failed" };
+
+            return formattedReferences;
+        } catch (error) {
+            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+            return null;
         }
     }
 }
