@@ -1,13 +1,10 @@
 {
     "name": "refme",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "refme is a CLI tool that generates formatted citations (references) based on various unique identifiers, including URL, DOI, ISBN, PMID, and PMCID.",
     "private": false,
     "bin": "./bin/index.js",
     "type": "module",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/ganymedelabs/refme.git"
@@ -20,6 +17,7 @@
     "homepage": "https://github.com/ganymedelabs/refme#readme",
     "dependencies": {
         "@citation-js/core": "^0.7.14",
-        "@citation-js/plugin-csl": "^0.7.14"
+        "@citation-js/plugin-csl": "^0.7.14",
+        "jsdom": "^25.0.1"
     }
 }

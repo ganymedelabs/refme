@@ -1,5 +1,6 @@
 import { Cite, plugins } from "@citation-js/core";
 import "@citation-js/plugin-csl";
+import { JSDOM } from "jsdom";
 
 class CSLJson {
     constructor(cslJson, options = { logErrors: false }) {
@@ -98,6 +99,17 @@ class CSLJson {
     }
 
     async fromURL(url) {
+        function createAuthorsArray(authors) {
+            const authorsArray = authors.map((author) => {
+                const names = author.split(/\s+/);
+                const given = names.shift() || "";
+                const family = names.join(" ");
+                return { given, family };
+            });
+
+            return authorsArray;
+        }
+
         function extractAuthors(doc) {
             let authors = [];
 
@@ -133,8 +145,9 @@ class CSLJson {
         try {
             const response = await fetch(`${this.#CORS_PROXY}${url}`);
             const text = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(text, "text/html");
+
+            const dom = new JSDOM(text);
+            const doc = dom.window.document;
 
             return {
                 type: "webpage",
@@ -263,19 +276,19 @@ class CSLJson {
     }
 
     async toBibliography(options) {
-        const { style, lang } = options;
+        const { style, locale } = options;
         try {
             const cslFile = await this.#getCslFile(style);
-            const localeFile = await this.#getLocaleFile(lang);
+            const localeFile = await this.#getLocaleFile(locale);
 
             const config = plugins.config.get("@csl");
             config.templates.add(style, cslFile);
-            config.locales.add(lang, localeFile);
+            config.locales.add(locale, localeFile);
 
             const cite = new Cite(this.cslJson);
             const formattedReferences = cite.format("bibliography", {
                 template: style,
-                lang,
+                lang: locale,
             });
 
             return formattedReferences;
