@@ -4,7 +4,6 @@
     "description": "refme is a CLI tool that generates formatted citations (references) based on various unique identifiers, including URL, DOI, ISBN, PMID, and PMCID.",
     "private": false,
     "bin": "./bin/index.js",
-    "type": "module",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/ganymedelabs/refme.git"

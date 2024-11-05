@@ -1,7 +1,7 @@
-import { Cite, plugins } from "@citation-js/core";
-import "@citation-js/plugin-csl";
-import { JSDOM } from "jsdom";
-import { FONT, RESULT } from "./index.js"; // eslint-disable-line
+const { Cite, plugins } = require("@citation-js/core");
+require("@citation-js/plugin-csl");
+const { JSDOM } = require("jsdom");
+const { FONT, RESULT } = require("./common.js");
 
 class CSLJson {
     constructor(cslJson, options = { logErrors: false }) {
@@ -113,71 +113,73 @@ class CSLJson {
     }
 
     async fromURL(url) {
-        /* eslint-disable quotes */
-        function extractAuthors(doc) {
-            let authors = [];
-
-            const authorElement = doc.querySelector('.author[rel="author"]');
-            if (authorElement) authors.push(authorElement.textContent || "");
-
-            doc.querySelectorAll('meta[name="author"], meta[name="article:author"]').forEach((meta) => {
-                authors.push(meta.getAttribute("content") || "");
-            });
-
-            doc.querySelectorAll('span.css-1baulvz.last-byline[itemprop="name"]').forEach((span) => {
-                authors.push(span.textContent?.trim() || "");
-            });
-
-            authors = authors.filter((author, index, self) => author.trim() !== "" && self.indexOf(author) === index);
-
-            return this.#createAuthorsArray(authors);
-        }
-        /* eslint-enable quotes */
-
-        function extractContent(doc, selector, attr) {
-            const element = doc.querySelector(selector);
-
-            if (!element) {
-                return "";
-            }
-
-            if (attr) {
-                return element.hasAttribute(attr) ? element.getAttribute(attr) || "" : element.textContent || "";
-            }
-            return element.textContent || "";
-        }
-
         try {
             const response = await fetch(`${this.#CORS_PROXY}${url}`);
             const text = await response.text();
 
             const dom = new JSDOM(text);
-            const doc = dom.window.document;
+            const { document } = dom.window;
+
+            /* eslint-disable quotes */
+            const extractAuthors = () => {
+                let authors = [];
+
+                const authorElement = document.querySelector('.author[rel="author"]');
+                if (authorElement) authors.push(authorElement.textContent || "");
+
+                document.querySelectorAll('meta[name="author"], meta[name="article:author"]').forEach((meta) => {
+                    authors.push(meta.getAttribute("content") || "");
+                });
+
+                document.querySelectorAll('span.css-1baulvz.last-byline[itemprop="name"]').forEach((span) => {
+                    authors.push(span.textContent?.trim() || "");
+                });
+
+                authors = authors.filter(
+                    (author, index, self) => author.trim() !== "" && self.indexOf(author) === index
+                );
+
+                return this.#createAuthorsArray(authors);
+            };
+            /* eslint-enable quotes */
+
+            const extractContent = (selector, attr) => {
+                const element = document.querySelector(selector);
+
+                if (!element) {
+                    return "";
+                }
+
+                if (attr) {
+                    return element.hasAttribute(attr) ? element.getAttribute(attr) || "" : element.textContent || "";
+                }
+                return element.textContent || "";
+            };
 
             /* eslint-disable quotes */
             return {
                 type: "webpage",
-                title: extractContent(doc, "title", ""),
-                author: extractAuthors(doc),
-                "container-title": [extractContent(doc, 'meta[property="og:site_name"]', "content")],
-                publisher: extractContent(doc, 'meta[property="article:publisher"]', "content"),
+                title: extractContent("title", ""),
+                author: extractAuthors(),
+                "container-title": [extractContent('meta[property="og:site_name"]', "content")],
+                publisher: extractContent('meta[property="article:publisher"]', "content"),
                 accessed: this.#createDateObject(new Date()),
                 issued: this.#createDateObject(
                     new Date(
-                        extractContent(doc, 'meta[name="date"]', "content") ||
-                            extractContent(doc, 'meta[name="article:published_time"]', "content") ||
-                            extractContent(doc, 'meta[property="article:published_time"]', "content") ||
-                            extractContent(doc, 'meta[name="article:modified_time"]', "content") ||
-                            extractContent(doc, 'meta[property="article:modified_time"]', "content") ||
-                            extractContent(doc, 'meta[name="og:updated_time"]', "content") ||
-                            extractContent(doc, 'meta[property="og:updated_time"]', "content") ||
-                            extractContent(doc, ".publication-date", "")
+                        extractContent('meta[name="date"]', "content") ||
+                            extractContent('meta[name="article:published_time"]', "content") ||
+                            extractContent('meta[property="article:published_time"]', "content") ||
+                            extractContent('meta[name="article:modified_time"]', "content") ||
+                            extractContent('meta[property="article:modified_time"]', "content") ||
+                            extractContent('meta[name="og:updated_time"]', "content") ||
+                            extractContent('meta[property="og:updated_time"]', "content") ||
+                            extractContent(".publication-date", "")
                     )
                 ),
                 URL:
-                    extractContent(doc, 'meta[property="og:url"]', "content") ||
-                    extractContent(doc, 'meta[name="url"]', "content") ||
-                    extractContent(doc, 'link[rel="canonical"]', "href") ||
+                    extractContent('meta[property="og:url"]', "content") ||
+                    extractContent('meta[name="url"]', "content") ||
+                    extractContent('link[rel="canonical"]', "href") ||
                     url,
             };
             /* eslint-enable quotes */
@@ -306,4 +308,4 @@ class CSLJson {
     }
 }
 
-export default CSLJson;
+module.exports = CSLJson;
