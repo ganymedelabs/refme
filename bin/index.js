@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 import CSLJson from "./CSLJson.js";
+import pkg from "../package.json" assert { type: "json" };
 
-const FONT = {
+export const FONT = {
     BOLD: "\x1b[1m",
     GREEN: "\x1b[38;5;48m",
     BLUE: "\x1b[38;5;33m",
@@ -13,46 +14,51 @@ const FONT = {
     RESET: "\x1b[0m",
 };
 
-const RESULT = {
+export const RESULT = {
     SUCCESS: `${FONT.BG_GREEN}${FONT.BOLD}${FONT.BLACK} SUCCESS ${FONT.RESET}`,
     FAIL: `${FONT.BG_RED}${FONT.BOLD}${FONT.BLACK} FAIL ${FONT.RESET}`,
+    ERROR: `${FONT.BG_RED}${FONT.BOLD}${FONT.BLACK} ERROR ${FONT.RESET}`,
 };
 
-// Extract arguments, excluding the first two default ones (`node` and the script path)
-const args = process.argv.slice(2);
+export const HELP_MESSAGE = `
+        Usage:
 
-// Default values
-let style = "apa";
-let locale = "en-US";
-let logErrors = false;
+          refme <list of identifiers> [options]
 
-// Process each argument
-const identifiers = [];
-if (args.length === 0) {
-    process.stdout.write("");
-} else {
-    for (let i = 0; i < args.length; i++) {
-        if (args[i] === "--log-errors" || args[i] === "-e") {
-            logErrors = true;
-        } else if ((args[i] === "--style" || args[i] === "-s") && args[i + 1]) {
-            style = args[i + 1];
-            i++; // Skip the next argument as it's the style value
-        } else if ((args[i] === "--locale" || args[i] === "-l") && args[i + 1]) {
-            locale = args[i + 1];
-            i++; // Skip the next argument as it's the locale value
-        } else {
-            // Assume anything else is an identifier
-            identifiers.push(args[i]);
-        }
-    }
-}
+        Description:
+
+          refme is a CLI tool that generates formatted citations (references) based on various
+          unique identifiers, including URL, DOI, ISBN, PMID, and PMCID.
+        
+        Commands:
+
+          --style, -s <style>    Set the citation style (e.g., apa, modern-language-association, chicago-author-date)
+          --locale, -l <locale>  Set the locale for the output (e.g., en-US, fr-FR, ar)
+          --log-errors, -e       Enable logging of errors for debugging purposes
+          --version, -v          Display the current version of refme
+        
+        Examples:
+
+          refme identifier1 identifier2 identifier3 --style mla --locale en-GB
+          refme id1 id2 -s chicago-author-date -e
+          refme identifier --locale fr-FR
+
+        Notes:
+
+          - Identifiers are processed in the order provided.
+          - Use "--log-errors" to output errors for troubleshooting.
+          - You can check available citation styles and locales at:
+            - Styles: https://github.com/citation-style-language/styles
+            - Locales: https://github.com/citation-style-language/locales
+        
+`;
 
 function logLoading() {
     const loadingCharacters = "⣾⣽⣻⢿⡿⣟⣯⣷";
     let index = 0;
 
     const intervalId = setInterval(() => {
-        process.stdout.write("\r" + loadingCharacters[index] + " ");
+        process.stdout.write(`\r${loadingCharacters[index]} `);
 
         index = (index + 1) % loadingCharacters.length;
     }, 100);
@@ -61,6 +67,39 @@ function logLoading() {
         clearInterval(intervalId);
         process.stdout.write(`\r${doneString}`);
     };
+}
+
+function parseArguments(args) {
+    const identifiers = [];
+    let style = "apa";
+    let locale = "en-US";
+    let logErrors = false;
+    let showVersion = false;
+
+    const regexes = {
+        showVersion: /^-{1,2}v(ersion)?$/,
+        logErrors: /^-{1,2}e(rrors)?$/,
+        style: /^-{1,2}s(tyle)?$/,
+        locale: /^-{1,2}l(ocale)?$/,
+    };
+
+    for (let i = 0; i < args.length; i++) {
+        if (regexes.showVersion.test(args[i])) {
+            showVersion = true;
+        } else if (regexes.logErrors.test(args[i])) {
+            logErrors = true;
+        } else if (regexes.style.test(args[i]) && args[i + 1]) {
+            style = args[i + 1];
+            i++;
+        } else if (regexes.locale.test(args[i]) && args[i + 1]) {
+            locale = args[i + 1];
+            i++;
+        } else if (!args[i].startsWith("-")) {
+            identifiers.push(args[i].replace("\\-", "-"));
+        }
+    }
+
+    return { identifiers, style, locale, logErrors, showVersion };
 }
 
 function recognizeIdentifierType(string) {
@@ -115,7 +154,17 @@ async function retrieveContent(identifiers) {
     return contentArray;
 }
 
-(async () => {
+async function main() {
+    const { identifiers, style, locale, logErrors, showVersion } = parseArguments(process.argv.slice(2));
+
+    // Show version or help message if no identifiers were provided
+    if (showVersion) {
+        process.stdout.write(`${pkg.version}\n`);
+    } else if (identifiers.length === 0) {
+        process.stdout.write(HELP_MESSAGE);
+        return;
+    }
+
     // Parse and classify identifiers
     const parsedIdentifiers = identifiers.map(recognizeIdentifierType);
     const definedIdentifiers = parsedIdentifiers.filter(([type]) => type !== "undefined");
@@ -177,4 +226,8 @@ async function retrieveContent(identifiers) {
             }
         }
     }
-})();
+}
+
+main().catch((error) => {
+    console.error(`${RESULT.ERROR} ${FONT.RED}An error occurred: ${error.toString()}${FONT.RESET}`);
+});

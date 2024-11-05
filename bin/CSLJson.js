@@ -1,6 +1,7 @@
 import { Cite, plugins } from "@citation-js/core";
 import "@citation-js/plugin-csl";
 import { JSDOM } from "jsdom";
+import { FONT, RESULT } from "./index.js"; // eslint-disable-line
 
 class CSLJson {
     constructor(cslJson, options = { logErrors: false }) {
@@ -9,6 +10,8 @@ class CSLJson {
     }
 
     #CORS_PROXY = "https://corsproxy.io/?";
+
+    #errorTemplate = (error) => `\r${RESULT.ERROR} ${FONT.RED}${error.toString()}${FONT.RESET}\n`;
 
     async #getCslFile(style) {
         try {
@@ -19,7 +22,7 @@ class CSLJson {
             );
             return await response.text();
         } catch (error) {
-            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+            if (this.options.logErrors) process.stderr.write(this.#errorTemplate(error));
         }
     }
 
@@ -32,7 +35,7 @@ class CSLJson {
             );
             return await response.text();
         } catch (error) {
-            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+            if (this.options.logErrors) process.stderr.write(this.#errorTemplate(error));
         }
     }
 
@@ -104,7 +107,7 @@ class CSLJson {
                 author: message.author,
             };
         } catch (error) {
-            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+            if (this.options.logErrors) process.stderr.write(this.#errorTemplate(error));
             return { identifier: doi, type: "DOI", status: "failed" };
         }
     }
@@ -179,7 +182,7 @@ class CSLJson {
             };
             /* eslint-enable quotes */
         } catch (error) {
-            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+            if (this.options.logErrors) process.stderr.write(this.#errorTemplate(error));
             return { identifier: url, type: "URL", status: "failed" };
         }
     }
@@ -206,7 +209,7 @@ class CSLJson {
                 accessed: this.#createDateObject(new Date()),
             };
         } catch (error) {
-            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+            if (this.options.logErrors) process.stderr.write(this.#errorTemplate(error));
             return { identifier: isbn, type: "ISBN", status: "failed" };
         }
     }
@@ -241,7 +244,7 @@ class CSLJson {
                 author: data?.author,
             };
         } catch (error) {
-            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+            if (this.options.logErrors) process.stderr.write(this.#errorTemplate(error));
             return { identifier: pmcid, type: "PMCID", status: "failed" };
         }
     }
@@ -274,7 +277,7 @@ class CSLJson {
                 author: data?.author,
             };
         } catch (error) {
-            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+            if (this.options.logErrors) process.stderr.write(this.#errorTemplate(error));
             return { identifier: pmid, type: "PMID", status: "failed" };
         }
     }
@@ -297,7 +300,7 @@ class CSLJson {
 
             return formattedReferences;
         } catch (error) {
-            if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
+            if (this.options.logErrors) process.stderr.write(this.#errorTemplate(error));
             return null;
         }
     }
