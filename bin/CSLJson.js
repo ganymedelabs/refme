@@ -11,7 +11,7 @@ class CSLJson {
 
     #CORS_PROXY = "https://corsproxy.io/?";
 
-    #errorTemplate = (error) => `\r${RESULT.ERROR} ${FONT.RED}${error.toString()}${FONT.RESET}\n`;
+    #errorTemplate = (error) => `\n${RESULT.ERROR} ${FONT.RED}${error.toString()}${FONT.RESET}\n`;
 
     async #getCslFile(style) {
         try {

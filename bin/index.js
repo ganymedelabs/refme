@@ -126,7 +126,7 @@ function recognizeIdentifierType(string) {
     return ["undefined", trimmedString];
 }
 
-async function retrieveContent(identifiers) {
+async function retrieveContent(identifiers, logErrors) {
     const contentArray = await Promise.all(
         identifiers.map(async (identifier) => {
             const [identifierType, cleanedIdentifier] = identifier;
@@ -188,7 +188,7 @@ async function main() {
         );
 
         const logDone = logLoading();
-        const contentArray = await retrieveContent(definedIdentifiers);
+        const contentArray = await retrieveContent(definedIdentifiers, logErrors);
         const failedRetrievals = contentArray.filter((content) => content?.status === "failed");
         const successfulRetrievals = contentArray.filter((content) => content?.status !== "failed");
         logDone("");
@@ -228,6 +228,4 @@ async function main() {
     }
 }
 
-main().catch((error) => {
-    console.error(`${RESULT.ERROR} ${FONT.RED}An error occurred: ${error.toString()}${FONT.RESET}`);
-});
+main();
