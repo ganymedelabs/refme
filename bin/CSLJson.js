@@ -36,6 +36,17 @@ class CSLJson {
         }
     }
 
+    #createAuthorsArray(authors) {
+        const authorsArray = authors.map((author) => {
+            const names = author.split(/\s+/);
+            const given = names.shift() || "";
+            const family = names.join(" ");
+            return { given, family };
+        });
+
+        return authorsArray;
+    }
+
     #createDateObject(yearOrDate, month, day) {
         let year, adjustedMonth, adjustedDay;
 
@@ -99,17 +110,7 @@ class CSLJson {
     }
 
     async fromURL(url) {
-        function createAuthorsArray(authors) {
-            const authorsArray = authors.map((author) => {
-                const names = author.split(/\s+/);
-                const given = names.shift() || "";
-                const family = names.join(" ");
-                return { given, family };
-            });
-
-            return authorsArray;
-        }
-
+        /* eslint-disable quotes */
         function extractAuthors(doc) {
             let authors = [];
 
@@ -126,8 +127,9 @@ class CSLJson {
 
             authors = authors.filter((author, index, self) => author.trim() !== "" && self.indexOf(author) === index);
 
-            return createAuthorsArray(authors);
+            return this.#createAuthorsArray(authors);
         }
+        /* eslint-enable quotes */
 
         function extractContent(doc, selector, attr) {
             const element = doc.querySelector(selector);
@@ -149,6 +151,7 @@ class CSLJson {
             const dom = new JSDOM(text);
             const doc = dom.window.document;
 
+            /* eslint-disable quotes */
             return {
                 type: "webpage",
                 title: extractContent(doc, "title", ""),
@@ -174,6 +177,7 @@ class CSLJson {
                     extractContent(doc, 'link[rel="canonical"]', "href") ||
                     url,
             };
+            /* eslint-enable quotes */
         } catch (error) {
             if (this.options.logErrors) process.stderr.write(`\r${error.toString()}\n`);
             return { identifier: url, type: "URL", status: "failed" };
@@ -194,7 +198,7 @@ class CSLJson {
                 type: "book",
                 title: docs?.title,
                 "number-of-pages": docs?.number_of_pages_median,
-                author: createAuthorsArray(docs?.author_name),
+                author: this.#createAuthorsArray(docs?.author_name),
                 publisher: edition?.publisher?.[0],
                 "publisher-place": edition?.publish_place?.[0],
                 ISBN: edition?.isbn?.[0] || isbn,

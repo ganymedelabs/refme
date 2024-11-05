@@ -93,6 +93,7 @@ async function retrieveContent(identifiers) {
             const [identifierType, cleanedIdentifier] = identifier;
             const csl = new CSLJson({}, { logErrors });
 
+            /* eslint-disable indent */
             switch (identifierType) {
                 case "URL":
                     return await csl.fromURL(cleanedIdentifier);
@@ -107,6 +108,7 @@ async function retrieveContent(identifiers) {
                 default:
                     return null;
             }
+            /* eslint-enable indent */
         })
     );
 
@@ -124,7 +126,7 @@ async function retrieveContent(identifiers) {
         process.stdout.write(
             `${FONT.RED + FONT.BOLD}Unable to determine the type of these identifiers:${
                 FONT.RESET
-            }\n${undefinedIdentifiers.map(([_, id]) => `${FONT.RED}[Undefined]${FONT.RESET} ${id}\n`).join("")}\n`
+            }\n${undefinedIdentifiers.map(([_, id]) => `${FONT.RED}[Undefined]${FONT.RESET} ${id}\n`).join("")}\n` // eslint-disable-line no-unused-vars
         );
     }
 
