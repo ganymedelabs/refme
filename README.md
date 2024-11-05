@@ -1,5 +1,9 @@
 # refme
 
+![npm](https://img.shields.io/npm/v/refme)
+![npm](https://img.shields.io/npm/dw/refme)
+![License](https://img.shields.io/npm/l/refme)
+
 `refme` is a CLI tool that generates formatted citations (references) based on various unique identifiers, including URL, DOI, ISBN, PMID, and PMCID. Just pass in your identifiers, and `refme` will handle the rest!
 
 ## 📋 Table of Contents
