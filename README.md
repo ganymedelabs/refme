@@ -6,9 +6,6 @@
 
 -   [Installation](#-installation)
 -   [Usage](#-usage)
-    -   [Options](#-options)
-    -   [Examples](#-examples)
-    -   [Specifying Identifier Types](#-specifying-identifier-types)
 -   [Supported Identifiers](#-supported-identifiers)
 -   [Output](#-output)
 -   [License](#-license)
@@ -49,13 +46,13 @@ To generate citations, provide a list of unique identifiers as arguments. `refme
 refme 10.1000/xyz123 978-3-16-148410-0
 
 # Specifying a citation style and locale
-refme --style mla --locale en-GB 10.1000/xyz123
+refme --style modern-language-association --locale en-GB 10.1000/xyz123
 ```
 
 Or with `npx`:
 
 ```bash
-npx refme --style chicago --locale fr-FR https://example.com/article
+npx refme --style chicago-author-date --locale fr-FR https://example.com/article
 ```
 
 ### Specifying Identifier Types
