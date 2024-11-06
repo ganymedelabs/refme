@@ -11,6 +11,7 @@
 -   [Installation](#-installation)
 -   [Usage](#-usage)
 -   [Supported Identifiers](#-supported-identifiers)
+-   [Data Sources](#-data-sources)
 -   [Output](#-output)
 -   [License](#-license)
 -   [Contact](#-contact)
@@ -76,6 +77,16 @@ This will force `refme` to treat the first identifier as a URL and the second as
 -   **ISBN**: e.g., `978-3-16-148410-0`
 -   **PMID**: e.g., `27097605`
 -   **PMCID**: e.g., `PMC6323133`
+
+## 🌐 Data Sources
+
+`refme` uses the following free APIs to retrieve citation data:
+
+-   [CrossRef](https://www.crossref.org/documentation/retrieve-metadata/rest-api/): For DOI-based data, e.g., `https://api.crossref.org/works/<DOI>`
+-   [Open Library](https://openlibrary.org/developers/api): For ISBN-based data, e.g., `https://openlibrary.org/search.json?q=isbn:<ISBN>&mode=everything&fields=*,editions`
+-   [NCBI](https://api.ncbi.nlm.nih.gov/lit/ctxp/): For data from PubMed and PubMed Central, e.g., `https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=<PMID>` and `https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pmc/?format=csl&id=<PMCID>`
+
+These APIs provide open-access data for research and citation.
 
 ## 📄 Output
 
